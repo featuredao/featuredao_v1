@@ -12,12 +12,26 @@
     "@openzeppelin/hardhat-upgrades": "^1.17.0",
     "@truffle/hdwallet-provider": "^2.0.7",
     "moment": "^2.29.1",
-    "truffle-contract-size": "^2.0.1"
+    "truffle-contract-size": "^2.0.1",
+    "truffle-flattener": "^1.6.0"
   },
   "devDependencies": {
+    "truffle-plugin-verify": "^0.5.25",
     "web3": "^1.7.3"
   },
   "scripts": {
+    "verifyFactory": "truffle run verify FeatureFactory",
+    "verifyProjectInfo": "truffle run verify FeatureProjectInfo",
+    "verifyRouter": "truffle run verify FeatureRouter",
+    "verifyToken": "truffle run verify FeatureToken",
+    "verifyKovan": "yarn run verifyFactory --network kovan && yarn run verifyProjectInfo --network kovan && yarn run verifyRouter --network kovan && yarn run verifyToken --network kovan",
+    
+    "flatFactory": "truffle-flattener ./contracts/FeatureFactory.sol > ./contracts_flat/FeatureFactory.sol",
+    "flatProject": "truffle-flattener ./contracts/FeatureProject.sol > ./contracts_flat/FeatureProject.sol",
+    "flatProjectInfo": "truffle-flattener ./contracts/FeatureProjectInfo.sol > ./contracts_flat/FeatureProjectInfo.sol",
+    "flatRouter": "truffle-flattener ./contracts/FeatureRouter.sol > ./contracts_flat/FeatureRouter.sol",
+    "flatToken": "truffle-flattener ./contracts/FeatureToken.sol > ./contracts_flat/FeatureToken.sol",
+    "flat": "yarn run flatFactory && yarn run flatProject && yarn run flatProjectInfo && yarn run flatRouter && yarn run flatToken",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
