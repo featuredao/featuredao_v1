@@ -32,7 +32,9 @@
     "flatRouter": "truffle-flattener ./contracts/FeatureRouter.sol > ./contracts_flat/FeatureRouter.sol",
     "flatToken": "truffle-flattener ./contracts/FeatureToken.sol > ./contracts_flat/FeatureToken.sol",
     "flat": "yarn run flatFactory && yarn run flatProject && yarn run flatProjectInfo && yarn run flatRouter && yarn run flatToken",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "comp": "truffle compile",
+    "size": "truffle run contract-size"
   },
   "author": "",
   "license": "MIT"
