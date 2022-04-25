@@ -44,10 +44,10 @@ contract FeatureFactory {
   // address[] public projects;
   mapping(uint => address) public projects;
 
-  // event ownerChange(address old, address newone);
+  event ownerChange(address old, address newone);
   // event judgeControllerChange(address old, address newone);
 
-  // event feeToChange(address old, address newone);
+  event feeToChange(address old, address newone);
   // event feeControllerChange(address old, address newone);
 
   constructor() {
@@ -58,8 +58,7 @@ contract FeatureFactory {
   }
 
   function initialize(address _info) external {
-    // require(msg.sender == owner, 'F:owner');
-    require(msg.sender == owner);
+    require(msg.sender == owner, 'o');
 
     info = _info;
   }
@@ -70,36 +69,33 @@ contract FeatureFactory {
 
   // factory own base func
   function pause(bool _paused) public {
-    // require(msg.sender == owner, 'F:owner');
-    require(msg.sender == owner);
+    require(msg.sender == owner, 'o');
     paused = _paused;
   }
 
   function changeOwner(address _owner) public {
-    // require(msg.sender == owner, 'F:owner');
-    require(msg.sender == owner);
+    require(msg.sender == owner, 'o');
 
-    // emit ownerChange(owner, _owner);
+    emit ownerChange(owner, _owner);
     owner = _owner;
   }
 
   function changeFeeTo(address _feeTo) public {
-    // require(msg.sender == feeTo, 'F:feeTo');
-    require(msg.sender == feeTo);
+    require(msg.sender == feeTo, 'feeTo');
 
-    // emit feeToChange(feeTo, _feeTo);
+    emit feeToChange(feeTo, _feeTo);
     feeTo = _feeTo;
   }
 
   // function changeJudgeController(address _judgeController) public {
-  //   require(msg.sender == judgeController, 'F:controller');
+  //   require(msg.sender == judgeController, 'controller');
 
   //   // emit judgeControllerChange(judgeController, _judgeController);
   //   judgeController = _judgeController;
   // }
 
   // function changeFeeController(address _feeController) public {
-  //   require(msg.sender == feeController || msg.sender == owner, 'F:controller');
+  //   require(msg.sender == feeController || msg.sender == owner, 'controller');
 
   //   // emit feeControllerChange(feeController, _feeController);
   //   feeController = _feeController;
@@ -133,14 +129,12 @@ contract FeatureFactory {
     uint _lockTime,
     uint _feeRate,
 
-    AbstractFeatureProjectInfo.Info calldata _projInfo,
+    AbstractFeatureProjectInfo.Info calldata _baseInfo,
     AbstractFeatureProjectInfo.Judger calldata _judgerInfo
   ) public returns (uint _projId, address _project) {
-    // require(_lockTime == 0 || _lockTime > block.timestamp, 'F:lockTime_gt');
-    require(_lockTime == 0 || _lockTime > block.timestamp);
+    require(_lockTime == 0 || _lockTime > block.timestamp, 'gt');
 
-    // require(paused == false, 'F:paused');
-    require(paused == false);
+    require(paused == false, 'p');
 
     // begin from 1
     _projId = lastProjId.add(1);
@@ -155,14 +149,10 @@ contract FeatureFactory {
     projects[_projId] = _project;
 
     IFeatureProject(_project).initialize(_lockTime, _feeRate, msg.sender);
+
     IFeatureProjectInfo(info).addProject(
       _projId,
-      _project,
-      msg.sender,
-      _lockTime,
-      _feeRate,
-      block.number,
-      _projInfo,
+      _baseInfo,
       _judgerInfo
     );
   }
@@ -174,16 +164,14 @@ contract FeatureFactory {
   // - factory need to know if the proj isAnnounced, and stop it's mint process.
 
   function ensureFeeRateZero(address _project) public {
-    // require(msg.sender == feeController, 'F:feeController');
-    // require(msg.sender == owner, 'F:feeController');
-    require(msg.sender == owner);
+    // require(msg.sender == feeController, 'feeController');
+    require(msg.sender == owner, 'o');
     IFeatureProject(_project).ensureFeeRateZero();
   }
 
   function rejectJudgerment(address _project) public {
-    // require(msg.sender == judgeController, 'F:judgeController');
-    // require(msg.sender == owner, 'F:judgeController');
-    require(msg.sender == owner);
+    // require(msg.sender == judgeController, 'judgeController');
+    require(msg.sender == owner, 'o');
     IFeatureProject(_project).rejectJudgerment();
   }
 }

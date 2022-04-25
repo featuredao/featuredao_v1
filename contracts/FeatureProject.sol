@@ -5,9 +5,12 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./TransferHelper.sol";
+import "./IFeatureProject.sol";
 
 contract FeatureProject {
   using SafeMath for uint;
+
+  uint public lastPairId;
 
   bool public isLeftSideWin;
   bool public isAnnounced;
@@ -45,25 +48,24 @@ contract FeatureProject {
   // is no useful after announced.
   mapping(address => uint) public reserve;
 
-  address[] public leftSide;
-  address[] public rightSide;
+  mapping(uint => address) public leftSide;
+  mapping(uint => address) public rightSide;
 
   uint constant statusDefault = 0;
   uint constant statusAbort = 1;
   uint constant statusWithdrawed = 2;
   // status default is 0, 1 is abort, 2 is withdrawed.
-  uint[] public status;
+  mapping(uint => uint) public status;
 
-  uint[] public amount;
-  address[] public token;
-  string[] public memoRightSide;
-  string[] public memoUriRightSide;
-  string[] public memoLeftSide;
-  string[] public memoUriLeftSide;
+  mapping(uint => uint) public amount;
+  mapping(uint => address) public token;
+  mapping(uint => string) public memoRightSide;
+  mapping(uint => string) public memoUriRightSide;
+  mapping(uint => string) public memoLeftSide;
+  mapping(uint => string) public memoUriLeftSide;
 
   modifier lockNotAnnounced() {
-    // require(isAnnounced == false, 'F:Announced');
-    require(isAnnounced == false);
+    require(isAnnounced == false, 'isAnnounced');
     _;
   }
 
@@ -74,20 +76,16 @@ contract FeatureProject {
   // only can initialize one time
   // lock by factory, because it will call just after created.
   function initialize(uint _lockTime, uint _feeRate, address _judger) external {
-    // require(msg.sender == factory, 'F:Factory');
-    require(msg.sender == factory);
+    require(msg.sender == factory, 'F');
 
     // only can initialize one time check,
     // when judger is set, it means Initializeed.
-    // require(judger == address(0), 'F:init');
-    require(judger == address(0));
+    require(judger == address(0), 'init');
 
     // make sure args valid
-    // require(_lockTime == 0 || _lockTime > block.timestamp, 'F:lockTime');
-    require(_lockTime == 0 || _lockTime > block.timestamp);
-    // require(_feeRate >= 30 && _feeRate <= 2000, 'F:FeeRate');
-    require(_feeRate >= 30 && _feeRate <= 2000);
-    // require(_judger != address(0), 'F:Judger');
+    require(_lockTime == 0 || _lockTime > block.timestamp, 'lock');
+    require(_feeRate >= 30 && _feeRate <= 2000, 'feeRate');
+    // require(_judger != address(0), 'Judger');
 
     judger = _judger;
     feeRate = _feeRate;
@@ -96,12 +94,9 @@ contract FeatureProject {
 
   // judger can change feeRate to zero
   function unsetFeeRate() external {
-    // require(judger == msg.sender, 'F:Judger');
-    require(judger == msg.sender);
-    // require(judgmentStartTime == 0, 'F:makeJudgment');
-    require(judgmentStartTime == 0);
-    // require(feeRate >= 0, 'F:is0');
-    require(feeRate > 0);
+    require(judger == msg.sender, 'J');
+    require(judgmentStartTime == 0, 'start');
+    require(feeRate > 0, 'gt0');
     judgeFeeRateZeroPending = true;
   }
 
@@ -110,117 +105,148 @@ contract FeatureProject {
   // yes, you can send token by set another profiteer.
   // because Cobie hse two pair competitor.
   // if you want to set to black hole, use 0x0000...dead .
-  function addPair(address _profiteTo, address _token, uint _amount, bool _IsLeftSide, string calldata memo, string calldata memoUri) external {
+  function addPair(address _profiteTo, address _token, uint _amount, bool _IsLeftSide, string calldata memo, string calldata memoUri) external returns (uint _pairId){
     // ensure not try to annonce.
     // dont let user make mistakes.
-    // require(judgmentStartTime == 0, 'F:startd');
-    require(judgmentStartTime == 0);
+    require(judgmentStartTime == 0, 'start');
 
-    // require(address(_token) == _token, 'F:token');
-    // require(_profiteTo != address(0), 'F:profiteTo');
-    // require(_amount > 0, 'F:Amount');
-    require(_amount > 0);
+    // require(_profiteTo != address(0), 'profiteTo');
+    require(_amount > 0, 'amount');
 
     uint _balance = IERC20(_token).balanceOf(address(this));
-    // require(_balance >= _amount.add(reserve[_token]), 'F:K');
-    require(_balance >= _amount.add(reserve[_token]));
+    require(_balance >= _amount.add(reserve[_token]), 'K');
+
+    // begin from 1
+    _pairId = lastPairId.add(1);
 
     // need to init length;
-    status.push(statusDefault);
+    status[_pairId] = statusDefault;
+    amount[_pairId] = _amount;
+    token[_pairId] = _token;
+    reserve[_token] = _balance;
 
     if (_IsLeftSide) {
-      leftSide.push(_profiteTo);
-      rightSide.push(address(0));
-
-      memoRightSide.push('');
-      memoUriRightSide.push('');
-      memoLeftSide.push(memo);
-      memoUriLeftSide.push(memoUri);
+      leftSide[_pairId] = _profiteTo;
+      memoLeftSide[_pairId] = memo;
+      memoUriLeftSide[_pairId] = memoUri;
     }
     else {
-      leftSide.push(address(0));
-      rightSide.push(_profiteTo);
-      memoRightSide.push(memo);
-      memoUriRightSide.push(memoUri);
-      memoLeftSide.push('');
-      memoUriLeftSide.push('');
+      rightSide[_pairId] = _profiteTo;
+      memoRightSide[_pairId] = memo;
+      memoUriRightSide[_pairId] = memoUri;
     }
 
-    amount.push(_amount);
-    token.push(_token);
-
-    reserve[_token] = _balance;
+    lastPairId = _pairId;
   }
 
   // join pairs.
   // same means of addPair but joinPair need some addPair before.
-  function joinPair(uint _appendId, address _profiteTo, address _token, uint _amount, bool _IsLeftSide, string calldata memo, string calldata memoUri) external lockNotAnnounced {
+  function joinPair(uint _pairId, address _profiteTo, address _token, uint _amount, bool _IsLeftSide, string calldata memo, string calldata memoUri) external lockNotAnnounced {
     // ensure not try to annonce.
     // dont let user make mistakes.
     // if try to announce, please your abort.
-    // require(judgmentStartTime == 0, 'F:startd');
-    require(judgmentStartTime == 0);
+    require(judgmentStartTime == 0, 'start');
 
     uint _balance = IERC20(_token).balanceOf(address(this));
-    // require(_balance >= _amount.add(reserve[_token]), 'F:K');
-    require(_balance >= _amount.add(reserve[_token]));
+    require(_balance >= _amount.add(reserve[_token]), 'K');
 
-    // require(token[_appendId] == _token, 'F:token');
-    require(token[_appendId] == _token);
-    // require(_profiteTo != address(0), 'F:profiteTo');
-    // require(amount[_appendId] == _amount, 'F:Amount');
-    require(amount[_appendId] == _amount);
+    require(token[_pairId] == _token, 'token');
+
+    // require(_profiteTo != address(0), 'profiteTo');
+    require(amount[_pairId] == _amount, 'amount');
 
     if (_IsLeftSide) {
-      // require(leftSide[_appendId] == address(0), 'F:leftSide1');
-      require(leftSide[_appendId] == address(0));
-      // require(rightSide[_appendId] != address(0), 'F:rightSide1');
-      require(rightSide[_appendId] != address(0));
-      leftSide[_appendId] = _profiteTo;
+      require(leftSide[_pairId] == address(0), 'l1');
+      require(rightSide[_pairId] != address(0), 'r1');
+      leftSide[_pairId] = _profiteTo;
 
-      memoLeftSide[_appendId] = memo;
-      memoUriLeftSide[_appendId] = memoUri;
+      memoLeftSide[_pairId] = memo;
+      memoUriLeftSide[_pairId] = memoUri;
     }
     else {
-      // require(leftSide[_appendId] != address(0), 'F:leftSide2');
-      require(leftSide[_appendId] != address(0));
-      // require(rightSide[_appendId] == address(0), 'F:rightSide2');
-      require(rightSide[_appendId] == address(0));
-      rightSide[_appendId] = _profiteTo;
+      require(leftSide[_pairId] != address(0), 'l2');
+      require(rightSide[_pairId] == address(0), 'r2');
+      rightSide[_pairId] = _profiteTo;
 
-      memoRightSide[_appendId] = memo;
-      memoUriRightSide[_appendId] = memoUri;
+      memoRightSide[_pairId] = memo;
+      memoUriRightSide[_pairId] = memoUri;
     }
 
     reserve[_token] = _balance;
   }
 
-  function abort(uint _appendId) external {
-    // require(status[_appendId] == statusDefault, 'F:statusDefault');
-    require(status[_appendId] == statusDefault);
+  function abort(uint _pairId) external {
+    require(status[_pairId] == statusDefault, 'status');
 
-    address _leftSide = leftSide[_appendId];
-    address _rightSide = rightSide[_appendId];
+    address _leftSide = leftSide[_pairId];
+    address _rightSide = rightSide[_pairId];
     address abortAddress = _leftSide != address(0) ? _leftSide : _rightSide;
 
-    // require(_leftSide == address(0) || _rightSide == address(0), 'F:In');
-    require(_leftSide == address(0) || _rightSide == address(0));
-    // require(abortAddress == msg.sender, 'F:Owned');
-    require(abortAddress == msg.sender);
+    require(_leftSide == address(0) || _rightSide == address(0), 'ined');
+    require(abortAddress == msg.sender, 'Owned');
 
-    uint _amount = amount[_appendId];
+    uint _amount = amount[_pairId];
 
-    address _token = token[_appendId];
+    address _token = token[_pairId];
 
     TransferHelper.safeTransfer(_token, abortAddress, _amount);
 
-    status[_appendId] = statusAbort;
+    status[_pairId] = statusAbort;
 
     // when Announced, not need to change reserve
     if (!isAnnounced) {
       uint _balance = IERC20(_token).balanceOf(address(this));
       reserve[_token] = _balance;
     }
+  }
+
+  function makeJudgment(bool _isLeftSideWin) external lockNotAnnounced {
+    require(judgmentPending == false, 'pending');
+    require(msg.sender == judger, 'J');
+    require(lockTime <= block.timestamp, 'lock');
+
+    // judgment can set later 1 days.
+    require((judgmentStartTime + 1 days) <= block.timestamp, 'lock1day');
+    // require((judgmentStartTime + 10 minutes) <= block.timestamp, 'lock10m');
+    // require((judgmentStartTime + 10 seconds) <= block.timestamp, 'lock10s');
+
+    isLeftSideWin = _isLeftSideWin;
+    // lock 1 days to ensure.
+    // if something happen and need to reject, pleact contect us to rejuct it.
+    judgmentStartTime = block.timestamp;
+    judgmentPending = true;
+  }
+
+  // factory controller can change feeRate to zero when judge suggest to set feeRate to zero.
+  function ensureFeeRateZero() external {
+    require(msg.sender == factory, 'F');
+    require(judgmentStartTime == 0, 'start');
+    require(feeRate > 0, 'gt0');
+    require(judgeFeeRateZeroPending == true, 'pending');
+    feeRate = 0;
+    judgeFeeRateZeroPending = false;
+  }
+
+  // factory controller can revert this if it's evil,
+  // but factory controller will not do this
+  function rejectJudgerment() external {
+    require(msg.sender == factory, 'F');
+    require(judgmentPending == true, 'pending');
+    judgmentPending = false;
+  }
+
+  // any one can call this after time lock end;
+  // ensure after 1 day since judger is make judgment
+  function ensureJudgment() external lockNotAnnounced {
+    require(judgmentPending == true, 'pending');
+    require(block.timestamp >= (judgmentStartTime + 1 days), 'lock1days');
+    // require(block.timestamp >= (judgmentStartTime + 5 minutes), 'lock5m');
+    // require(block.timestamp >= (judgmentStartTime + 5 seconds), 'lock5s');
+
+
+    judgmentPending = false;
+    isAnnounced = true;
+    announcedTime = block.timestamp;
   }
 
   // if token has transfer fee, don't let it join by youself.
@@ -241,80 +267,16 @@ contract FeatureProject {
     TransferHelper.safeTransfer(_token, _winner, _amount);
   }
 
-  function makeJudgment(bool _isLeftSideWin) external lockNotAnnounced {
-    // require(judgmentPending == false, 'F:judgmentPending');
-    require(judgmentPending == false);
-    // require(msg.sender == judger, 'F:Judger');
-    require(msg.sender == judger);
-    // require(lockTime <= block.timestamp, 'F:lockTime');
-    require(lockTime <= block.timestamp);
-
-    // judgment can set later 1 days.
-    // require((judgmentStartTime + 1 days) <= block.timestamp, 'F:Lock');
-    require((judgmentStartTime + 1 days) <= block.timestamp);
-    // require((judgmentStartTime + 10 minutes) <= block.timestamp);
-    // require((judgmentStartTime + 10 seconds) <= block.timestamp);
-
-    isLeftSideWin = _isLeftSideWin;
-    // lock 1 days to ensure.
-    // if something happen and need to reject, pleact contect us to rejuct it.
-    judgmentStartTime = block.timestamp;
-    judgmentPending = true;
-  }
-
-  // factory controller can change feeRate to zero when judge suggest to set feeRate to zero.
-  function ensureFeeRateZero() external {
-    // require(msg.sender == factory, 'F:Factory');
-    require(msg.sender == factory);
-    // require(judgmentStartTime == 0, 'F:makeJudgment');
-    require(judgmentStartTime == 0);
-    // require(feeRate >= 0, 'F:is0');
-    require(feeRate >= 0);
-    // require(judgeFeeRateZeroPending == true, 'F:Pending');
-    require(judgeFeeRateZeroPending == true);
-    feeRate = 0;
-    judgeFeeRateZeroPending = false;
-  }
-
-  // factory controller can revert this if it's evil,
-  // but factory controller will not do this
-  function rejectJudgerment() external {
-    // require(msg.sender == factory, 'F:Factory');
-    require(msg.sender == factory);
-    // require(judgmentPending == true, 'F:judgmentPending');
-    require(judgmentPending == true);
-    judgmentPending = false;
-  }
-
-  // any one can call this after time lock end;
-  // ensure after 1 day since judger is make judgment
-  function ensureJudgment() external lockNotAnnounced {
-    // require(judgmentPending == true, 'F:judgmentPending');
-    require(judgmentPending == true);
-    // require(block.timestamp >= (judgmentStartTime + 1 days), 'F:Pending');
-    require(block.timestamp >= (judgmentStartTime + 1 days));
-    // require(block.timestamp >= (judgmentStartTime + 5 minutes));
-    // require(block.timestamp >= (judgmentStartTime + 5 seconds));
-
-
-    judgmentPending = false;
-    isAnnounced = true;
-    announcedTime = block.timestamp;
-  }
-
   // you can call withdraw direct.
   // when Announced, can withdraw, not need to change reserve
   function withdraw(uint _appendId) external {
-    // require(isAnnounced == true, 'F:isAnnounced');
-    require(isAnnounced == true);
+    require(isAnnounced == true, 'isAnnounced');
 
-    // require(status[_appendId] == statusDefault, 'F:status');
-    require(status[_appendId] == statusDefault);
+    require(status[_appendId] == statusDefault, 'status');
 
     address _leftSide = leftSide[_appendId];
     address _rightSide = rightSide[_appendId];
-    // require(_leftSide != address(0) || _rightSide != address(0), 'F:In');
-    require(_leftSide != address(0) || _rightSide != address(0));
+    require(_leftSide != address(0) || _rightSide != address(0), 'ined');
 
     address _winner;
     if (isLeftSideWin) {
@@ -326,94 +288,8 @@ contract FeatureProject {
 
     // if some one want to send gas to do call withdraw to other, very greate.
     // require winner to withdraw, by tx.origin, prepare for mint method in router.
-    // require(msg.sender == _winner || tx.origin == _winner, 'F:winner');
-    require(tx.origin == _winner);
+    require(msg.sender == _winner || tx.origin == _winner, 'winner');
     transferToWiner(token[_appendId], _winner, amount[_appendId]);
     status[_appendId] = statusWithdrawed;
   }
-
-  // when this project is 365 days (always 1 year) since isAnnounced,
-  // every one can take the token if someone not withdraw
-  // we dont want the proj to archived in one way.
-  function withdrawToken(address _token) public {
-    // require(isAnnounced, 'F:isAnnounced');
-    require(isAnnounced);
-    // require(announcedTime + 365 days < block.timestamp, 'F:365');
-    require(announcedTime + 365 days < block.timestamp);
-    // require(announcedTime + 10 minutes < block.timestamp);
-    // require(announcedTime + 10 seconds < block.timestamp);
-
-    TransferHelper.safeTransfer(_token, msg.sender, IERC20(_token).balanceOf(address(this)));
-  }
-
-  // save size....
-  // use by web.
-  function getAllAddressData(uint _name) external view returns (address[] memory _all) {
-    if (_name == 0) {
-      _all = rightSide;
-    }
-    else if (_name == 1) {
-      _all = leftSide;
-    }
-    else if (_name == 2) {
-      _all = token;
-    }
-  }
-  function getAddressDataByIndex(uint _name, uint _index) external view returns (address _data) {
-    if (_name == 0) {
-      _data = rightSide[_index];
-    }
-    else if (_name == 1) {
-      _data = leftSide[_index];
-    }
-    else if (_name == 2) {
-      _data = token[_index];
-    }
-  }
-  function getAllUintData(uint _name) external view returns (uint[] memory _all) {
-    if (_name == 3) {
-      _all = amount;
-    }
-    else if (_name == 4) {
-      _all = status;
-    }
-  }
-  function getUintDataByIndex(uint _name, uint _index) external view returns (uint _data) {
-    if (_name == 3) {
-      _data = amount[_index];
-    }
-    else if (_name == 4) {
-      _data = status[_index];
-    }
-  }
-
-  function getAllStringData(uint _name) external view returns (string[] memory _all) {
-    if (_name == 5) {
-      _all = memoLeftSide;
-    }
-    else if (_name == 6) {
-      _all = memoUriLeftSide;
-    }
-    else if (_name == 7) {
-      _all = memoRightSide;
-    }
-    else if (_name == 8) {
-      _all = memoUriRightSide;
-    }
-  }
-  function geStringDataByIndex(uint _name, uint _index) external view returns (string memory _data) {
-    if (_name == 5) {
-      _data = memoLeftSide[_index];
-    }
-    else if (_name == 6) {
-      _data = memoUriLeftSide[_index];
-    }
-    else if (_name == 7) {
-      _data = memoRightSide[_index];
-    }
-    else if (_name == 8) {
-      _data = memoUriRightSide[_index];
-    }
-  }
-  // save size end
 }

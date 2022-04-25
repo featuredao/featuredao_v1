@@ -15,22 +15,14 @@ abstract contract AbstractFeatureProjectInfo {
     string moreInfo;
   }
 
-  struct Projects {
-    uint projId;
-    address project;
-    address judger;
-
-    uint lockTime;
-
-    uint feeRate;
-    uint createBlockNumber;
-
-    Info projInfo;
+  struct Project {
+    Info baseInfo;
     Judger judgerInfo;
   }
 
-  event ProjectCreated(Projects);
+  event ProjectCreated(Project);
 
-  Projects[] public projects;
+  mapping(uint => Project) public projects;
+
   address factory;
 }

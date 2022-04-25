@@ -8,13 +8,11 @@ interface IFeatureProjectInfo {
 
   function addProject(
     uint _projId,
-    address _project,
-    address _judger,
-    uint _lockTime,
-    uint _feeRate,
-    uint _createBlockNumber,
 
-    AbstractFeatureProjectInfo.Info calldata _projInfo,
+    AbstractFeatureProjectInfo.Info calldata _baseInfo,
     AbstractFeatureProjectInfo.Judger calldata _judgerInfo
   ) external;
+
+  function getProjectsById(uint _id) external view returns (AbstractFeatureProjectInfo.Project memory);
+
 }

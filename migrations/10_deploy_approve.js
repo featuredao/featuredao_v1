@@ -8,17 +8,17 @@ const FeatureToken = artifacts.require("FeatureToken");
 
 
 module.exports = async function (deployer, network, accounts) {
-  // if (network === 'development') {
-  //   let info = {};
-  //   try {
-  //     info = require('../build/info');
-  //   }
-  //   catch (err) {
-  //     info = {};
-  //   }
+  if (network === 'development') {
+    let info = {};
+    try {
+      info = require('../build/info');
+    }
+    catch (err) {
+      info = {};
+    }
 
-  //   const $FeatureToken = await FeatureToken.at(info.FeatureToken.address);
+    const $FeatureToken = await FeatureToken.at(info.FeatureToken.address);
 
-  //   await $FeatureToken.approve(info.FeatureRouter.address, '11111111111111111111111111111111111');
-  // }
+    await $FeatureToken.approve(info.FeatureRouter.address, '11111111111111111111111111111111111');
+  }
 };

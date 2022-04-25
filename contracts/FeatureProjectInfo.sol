@@ -4,46 +4,28 @@ pragma solidity ^0.8.12;
 import './AbstractFeatureProjectInfo.sol';
 contract FeatureProjectInfo is AbstractFeatureProjectInfo {
   function initialize(address _factory) external  {
-    require(factory == address(0), 'F:init');
+    require(factory == address(0), 'init');
     factory = _factory;
   }
 
-  function getAllProjects() external view returns (Projects[] memory) {
-    return projects;
-  }
-
-  // it must be id - 1
-  function getProjectsByIndex(uint _index) external view returns (Projects memory) {
-    return projects[_index];
+  function getProjectsById(uint _id) external view returns (Project memory) {
+    return projects[_id];
   }
 
   function addProject(
     uint _projId,
-    address _project,
-    address _judger,
-    uint _lockTime,
-    uint _feeRate,
-    uint _createBlockNumber,
 
-    Info calldata _projInfo,
+    Info calldata _baseInfo,
     Judger calldata _judgerInfo
   ) external {
-    require(msg.sender == factory, 'F:factory');
-    Projects memory proj = Projects({
-      projId: _projId,
-      project: _project,
-      judger: _judger,
+    require(msg.sender == factory, 'F');
 
-      lockTime: _lockTime,
-
-      feeRate: _feeRate,
-      createBlockNumber: _createBlockNumber,
-
-      projInfo: _projInfo,
+    Project memory proj = Project({
+      baseInfo: _baseInfo,
       judgerInfo: _judgerInfo
     });
 
-    projects.push(proj);
+    projects[_projId] = proj;
 
     emit ProjectCreated(proj);
   }
