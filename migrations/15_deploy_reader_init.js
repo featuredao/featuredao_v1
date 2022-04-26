@@ -7,7 +7,7 @@ const FeatureReader = artifacts.require("FeatureReader");
 module.exports = async function (deployer, network, accounts) {
   let info = {};
   try {
-    info = require('../build/info');
+    info = require(`../build/info.${network}`);
   }
   catch (err) {
     info = {};

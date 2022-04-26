@@ -5,11 +5,11 @@ const saveInfo = require('./utils/save_info');
 const FeatureFactory = artifacts.require("FeatureFactory");
 
 module.exports = async function (deployer, network, accounts) {
-  if (network === 'development') {
+  if (['development', 'rinkeby', 'ropsten', 'kovan'].includes(network) || network.endsWith('-fork')) {
 
     let info = {};
     try {
-      info = require('../build/info');
+      info = require(`../build/info.${network}`);
     }
     catch (err) {
       info = {};

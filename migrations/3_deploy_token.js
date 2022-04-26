@@ -7,16 +7,13 @@ const FeatureToken = artifacts.require("FeatureToken");
 module.exports = async function (deployer, network, accounts) {
   let info = {};
   try {
-    info = require('../build/info');
+    info = require(`../build/info.${network}`);
   }
   catch (err) {
     info = {};
   }
 
-  if (['development', 'rinkeby', 'ropsten', 'kovan'].includes(network) || network.endsWith('-fork')) {
-    // if not add this , $FeatureToken will be undefined.
-    const $Migrations = await deployer.deploy(Migrations);
-  }
+  const $Migrations = await Migrations.at(info.Migrations.address);
 
   const $FeatureToken = await deployer.deploy(FeatureToken);
 
@@ -26,6 +23,6 @@ module.exports = async function (deployer, network, accounts) {
     transactionHash: $FeatureToken.transactionHash,
   };
 
-  saveInfo(info);
+  saveInfo(info, network);
 
 };

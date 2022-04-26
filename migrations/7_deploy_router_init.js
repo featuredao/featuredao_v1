@@ -9,18 +9,18 @@ const WETH9 = artifacts.require("WETH9");
 module.exports = async function (deployer, network, accounts) {
   let info = {};
   try {
-    info = require('../build/info');
+    info = require(`../build/info.${network}`);
   }
   catch (err) {
     info = {};
   }
 
+  const $Migrations = await Migrations.at(info.Migrations.address);
   const $FeatureRouter = await FeatureRouter.at(info.FeatureRouter.address);
 
+  // mainnet
   let WETHAddress = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
   if (['development'].includes(network)) {
-    // // if not add this , $FeatureRouter will be undefined.
-    const $Migrations = await deployer.deploy(Migrations);
     const $WETH9 = await deployer.deploy(WETH9);
     WETHAddress = $WETH9.contract._address;
 
@@ -30,9 +30,10 @@ module.exports = async function (deployer, network, accounts) {
       transactionHash: $WETH9.transactionHash,
     };
 
-    saveInfo(info);
+    saveInfo(info, network);
   }
   else if (['kovan'].includes(network)) {
+    // kovan
     WETHAddress = '0xa1c74a9a3e59ffe9bee7b85cd6e91c0751289ebd';
   }
 
