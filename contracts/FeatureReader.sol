@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
-pragma experimental ABIEncoderV2;
+// pragma experimental ABIEncoderV2;
 
 import "./IFeatureProjectInfo.sol";
 import "./FeatureProject.sol";
 import "./IFeatureProject.sol";
 import "./IFeatureFactory.sol";
 
-
+interface IERC20READRE {
+  function name() external view returns (string memory);
+  function symbol() external view returns (string memory);
+  function decimals() external view returns (uint);
+}
 
 contract FeatureReader {
   using SafeMath for uint;
@@ -56,6 +60,18 @@ contract FeatureReader {
 
     factory = _factory;
     info = _info;
+  }
+
+  function tokenDetail(address _token) public view returns (
+    string memory name,
+    string memory symbol,
+    uint decimals
+  ) {
+    IERC20READRE token = IERC20READRE(_token);
+
+    name = token.name();  
+    symbol = token.symbol();
+    decimals = token.decimals();
   }
 
   function projectList() public view returns (Project[] memory) {

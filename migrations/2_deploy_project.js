@@ -17,8 +17,6 @@ module.exports = async function (deployer, network, accounts) {
     // if not add this , $FeatureToken will be undefined.
     const $Migrations = await deployer.deploy(Migrations);
   }
-  // if not add this , $FeatureToken will be undefined.
-  const $Migrations = await deployer.deploy(Migrations);
 
   const $FeatureProject = await deployer.deploy(FeatureProject);
 

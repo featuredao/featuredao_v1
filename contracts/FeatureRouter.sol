@@ -57,7 +57,7 @@ contract FeatureRouter {
     address _WETHAddress = WETHAddress;
     IWETH(_WETHAddress).deposit{value: msg.value}();
 
-    TransferHelper.safeTransferFrom(_WETHAddress, msg.sender, _project, msg.value);
+    TransferHelper.safeTransferFrom(_WETHAddress, address(this), _project, msg.value);
 
     IFeatureProject(_project).joinPair(_appendId, _profiteTo, _WETHAddress, msg.value, _IsLeftSide, memo, memoUri);
   }
