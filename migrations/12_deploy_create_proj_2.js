@@ -4,9 +4,6 @@ const saveInfo = require('./utils/save_info');
 // const Migrations = artifacts.require("Migrations");
 const FeatureFactory = artifacts.require("FeatureFactory");
 
-
-
-
 module.exports = async function (deployer, network, accounts) {
   if (network === 'development') {
 

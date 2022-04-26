@@ -6,9 +6,6 @@ const FeatureFactory = artifacts.require("FeatureFactory");
 const FeatureRouter = artifacts.require("FeatureRouter");
 const FeatureToken = artifacts.require("FeatureToken");
 
-
-
-
 module.exports = async function (deployer, network, accounts) {
   if (network === 'development') {
 
