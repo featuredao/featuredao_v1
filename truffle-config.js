@@ -97,7 +97,7 @@ module.exports = {
       port: 8545,
       network_id: "*",
       gasPrice: 1000000000,
-      gas: 30000000,
+      gas: 6000000,
     },
     test: {
       host: "127.0.0.1",

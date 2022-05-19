@@ -32,6 +32,10 @@ module.exports = async function (deployer, network, accounts) {
 
     saveInfo(info, network);
   }
+  else if (['rinkeby'].includes(network)) {
+    // kovan
+    WETHAddress = '0xdf032bc4b9dc2782bb09352007d4c57b75160b15';
+  }
   else if (['kovan'].includes(network)) {
     // kovan
     WETHAddress = '0xa1c74a9a3e59ffe9bee7b85cd6e91c0751289ebd';
